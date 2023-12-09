@@ -15,7 +15,7 @@ credentials = google.oauth2.credentials.Credentials.from_authorized_user_file('u
 youtube = build('youtube', 'v3', credentials=credentials)
 
 # Define the ID of your YouTube playlist
-playlist_id = 'PLia5vPs9sr0s6c2SDvCU8D_8BzDMh4N4B'
+playlist_id = ''
 
 # Prepare the playlist items for all songs
 playlist_items = []
