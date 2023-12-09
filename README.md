@@ -19,6 +19,7 @@ Make sure you have the following dependencies installed on your system:
    curl -O https://raw.githubusercontent.com/Vlad0244/yt-playlist/main/downloadingFromYTplaylist/download_yt_playlist.py
 
 2. change the following variables either via bash script or directly:
+   https://github.com/Vlad0244/yt-playlist/blob/b1a6648958f014f21d95bce42e80b67b8801d7ed/downloadingFromYTplaylist/download_yt_playlist.py#L7-L9
     ```
     PLAYLIST_LINK = sys.argv[1]
     DL_DIRECTORY = sys.argv[2]
