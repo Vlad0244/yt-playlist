@@ -18,10 +18,16 @@ Make sure you have the following dependencies installed on your system:
    ```bash
    curl -O https://raw.githubusercontent.com/Vlad0244/yt-playlist/main/downloadingFromYTplaylist/download_yt_playlist.py
 
-2. change the following variables either via bash script or directly:
+2. modify the following variables either via bash script or directly:
    https://github.com/Vlad0244/yt-playlist/blob/b1a6648958f014f21d95bce42e80b67b8801d7ed/downloadingFromYTplaylist/download_yt_playlist.py#L7-L9
     ```
+    # youtube link to a playlist
     PLAYLIST_LINK = sys.argv[1]
+   
+    # directory to where you want to install the songs eg: '/data/storage/music'
     DL_DIRECTORY = sys.argv[2]
+   
+    # extension of the audio. eg: 'mp3', 'wav', 'm4a'
+    # do not include the period . before the extension
     PREFERRED_EXTENSION = sys.argv[3]
 3. Run the file 
