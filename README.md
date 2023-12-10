@@ -27,7 +27,7 @@ Make sure you have the following dependencies installed on your system:
     # directory to where you want to install the songs eg: '/data/storage/music'
     DL_DIRECTORY = sys.argv[2]
    
-    # extension of the audio. eg: 'mp3', 'wav', 'm4a'
+    # Only mp3 and m4a/mp4 are supported for thumbnail embedding for now
     # do not include the period . before the extension
     PREFERRED_EXTENSION = sys.argv[3]
 3. Run the file 
