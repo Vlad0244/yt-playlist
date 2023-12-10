@@ -120,16 +120,22 @@ def download_songs_in_dir(phone_playlist_dict, yt_playlist_dict):
         download_video(DL_DIRECTORY, PLAYLIST_LINK)
         return
 
-    print("Updating Playlist")
+    changes_made = 0
     files = os.listdir(DL_DIRECTORY)
     for vid_id, i in phone_playlist_dict.items():
 
         if vid_id not in yt_playlist_dict:
             os.remove(os.path.join(DL_DIRECTORY, files[i]))
+            changes_made += 1
+
     for vid_id in yt_playlist_dict:
 
         if vid_id not in phone_playlist_dict:
             download_video(DL_DIRECTORY, vid_id)
+            changes_made += 1
+
+    if changes_made == 0:
+        print("Playlist is up to date!")
 
 
 create_or_update_playlist(PLAYLIST_LINK, DL_DIRECTORY)
