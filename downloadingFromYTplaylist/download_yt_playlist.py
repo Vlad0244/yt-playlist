@@ -16,7 +16,9 @@ def create_or_update_playlist(pl_link, dl_dir):
     :param dl_dir: string to dir you want to dl to
     :return: none
     """
+    print("Getting youtube playlist info...")
     yt_songs_dict = yt_create_playlist_dict(pl_link)
+    print("Getting local playlist info...")
     phone_songs_dict = phone_create_playlist_dict(dl_dir)
     download_songs_in_dir(phone_songs_dict, yt_songs_dict)
 
