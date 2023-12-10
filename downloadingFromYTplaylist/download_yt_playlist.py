@@ -1,11 +1,11 @@
 import os
 from youtubesearchpython import Playlist
 import sys
-import subprocess
-
+import youtube_dl
 
 PLAYLIST_LINK = sys.argv[1]
 DL_DIRECTORY = sys.argv[2]
+# Only mp3 and m4a/mp4 are supported for thumbnail embedding for now
 PREFERRED_EXTENSION = sys.argv[3]
 
 
@@ -64,18 +64,30 @@ def download_video(pl_path, url):
     :return: None
     """
     try:
-        command = [
-            'youtube-dl',
-            '-o', f'{pl_path}/%(title)s=%(id)s=.%(ext)s',
-            '--audio-format', PREFERRED_EXTENSION,
-            '--extract-audio',
-            '--add-metadata',
-            '--embed-thumbnail',
-            url
-        ]
-        subprocess.run(command, check=True)
+        ydl_opts = {
+            'format': f'{PREFERRED_EXTENSION}/bestaudio/best',
+            'outtmpl': f'{pl_path}/%(title)s=%(id)s=.%(ext)s',
+            'writethumbnail': True,
+            'embedthumbnail': True,
+            'postprocessors': [{
+                'key': 'FFmpegMetadata',
+            },
+                {
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': PREFERRED_EXTENSION,
+                    'preferredquality': 'best',
+                },
+                {
+                    'key': 'EmbedThumbnail',
+                },
+            ],
+
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
         print("Download completed successfully.")
-    except subprocess.CalledProcessError as e:
+    except youtube_dl.DownloadError as e:
         print(f"Error: {e}")
 
 
@@ -102,11 +114,6 @@ def download_songs_in_dir(phone_playlist_dict, yt_playlist_dict):
     :return: None
     """
     ppl = len(phone_playlist_dict)
-    ytpl = len(yt_playlist_dict)
-
-    if ppl == ytpl:
-        print('Up to Date')
-        return
 
     if ppl == 0:
         print("Downloading whole playlist")
