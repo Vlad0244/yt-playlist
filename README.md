@@ -2,6 +2,7 @@
 
 This Python script allows you to install a playlist of your choice from YouTube. Re-running the script will update your playlist to match the content of the specified YouTube playlist.
 
+AggregationOfMusicAcrossPlatformsMethods/ contains code I used to pool together songs from spotify/other yt playlists into one playlist.
 ## Dependencies
 
 Make sure you have the following dependencies installed on your system:
