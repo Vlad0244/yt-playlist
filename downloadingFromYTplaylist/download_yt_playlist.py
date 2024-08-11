@@ -1,7 +1,7 @@
 import os
 from youtubesearchpython import Playlist
 import sys
-import youtube_dl
+import yt_dlp
 
 PLAYLIST_LINK = sys.argv[1]
 DL_DIRECTORY = sys.argv[2]
@@ -85,11 +85,11 @@ def download_video(pl_path, url):
             ],
 
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
         print("Download completed successfully.")
-    except youtube_dl.DownloadError as e:
+    except yt_dlp.DownloadError as e:
         print(f"Error: {e}")
 
 
