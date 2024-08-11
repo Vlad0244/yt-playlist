@@ -7,7 +7,7 @@ AggregationOfMusicAcrossPlatformsMethods/ contains code I used to pool together 
 
 Make sure you have the following dependencies installed on your system:
 
-- [youtube-dl](https://github.com/ytdl-org/youtube-dl)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [ffmpeg](https://ffmpeg.org/)
 - [atomicparsley](https://github.com/wez/atomicparsley)
 - [youtubesearchpython](https://github.com/alexmercerind/youtube-search-python)
