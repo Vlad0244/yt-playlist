@@ -1,5 +1,4 @@
 import os
-from youtubesearchpython import Playlist
 import sys
 import yt_dlp
 
@@ -36,14 +35,19 @@ def yt_create_playlist_dict(yt_playlist_url):
 
 def get_yt_playlist(yt_playlist_url):
     """
-    return a list of videos. the videos are a dict of the video's information
+    Return a list of videos in the playlist using yt_dlp.
     :param yt_playlist_url: string url to the playlist
     :return: the list of videos in list format
     """
-    yt_playlist = Playlist(yt_playlist_url)
-    while yt_playlist.hasMoreVideos:
-        yt_playlist.getNextVideos()
-    return yt_playlist.videos
+    ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,  # Only get metadata, not download
+        'skip_download': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(yt_playlist_url, download=False)
+        # info['entries'] is a list of video dicts
+        return info.get('entries', [])
 
 
 def yt_playlist_to_dict(yt_playlist):
