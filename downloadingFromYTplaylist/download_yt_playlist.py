@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import yt_dlp
 
@@ -23,6 +24,35 @@ PERMANENT_ERRORS = (
     'removed by the uploader',
     'violat',
 )
+
+
+
+def js_runtime_opts():
+    """
+    finds an installed javascript runtime and returns the ydl opts selecting it.
+    without one youtube only offers formats it cannot descramble, which shows up
+    as HTTP 403 on every download.
+    :return: dict of extra ydl opts, empty if nothing needs to be passed
+    """
+    if shutil.which('deno'):
+        return {}  # the only runtime yt-dlp enables on its own
+
+    for runtime in ('node', 'bun'):
+        if not shutil.which(runtime):
+            continue
+        try:
+            base = yt_dlp.parse_options([]).ydl_opts
+            chosen = yt_dlp.parse_options(['--js-runtimes', runtime]).ydl_opts
+        except Exception:
+            print(f"Found {runtime} but this yt-dlp does not support --js-runtimes; "
+                  f"try: pip install -U yt-dlp")
+            return {}
+        print(f"Using {runtime} as the javascript runtime.")
+        return {k: v for k, v in chosen.items() if base.get(k) != v}
+
+    print("WARNING: no javascript runtime found. Downloads will fail with HTTP 403.")
+    print("         Install one with:  pkg install nodejs")
+    return {}
 
 
 def create_or_update_playlist(pl_link, dl_dir):
@@ -134,6 +164,7 @@ def download_video(pl_path, url):
     """
     try:
         ydl_opts = {
+            **JS_RUNTIME_OPTS,
             'format': f'bestaudio[ext={PREFERRED_EXTENSION}]/bestaudio/best',
             'outtmpl': f'{pl_path}/%(title)s=%(id)s=.%(ext)s',
             'writethumbnail': True,
@@ -231,4 +262,5 @@ def download_songs_in_dir(phone_playlist_dict, yt_playlist_dict):
         print("Playlist is up to date!")
 
 
+JS_RUNTIME_OPTS = js_runtime_opts()
 create_or_update_playlist(PLAYLIST_LINK, DL_DIRECTORY)
