@@ -7,6 +7,23 @@ DL_DIRECTORY = sys.argv[2]
 # Only mp3 and m4a/mp4 are supported for thumbnail embedding for now
 PREFERRED_EXTENSION = sys.argv[3]
 
+# ids of videos that can never be downloaded (deleted/private/blocked) are
+# remembered here so every run does not retry them
+UNAVAILABLE_LIST = '.unavailable_ids.txt'
+
+# error fragments that mean the video is gone for good, as opposed to a
+# transient failure like a 403 or a timeout which is worth retrying
+PERMANENT_ERRORS = (
+    'private video',
+    'video is not available',
+    'video is unavailable',
+    'no longer available',
+    'has been terminated',
+    'copyright',
+    'removed by the uploader',
+    'violat',
+)
+
 
 def create_or_update_playlist(pl_link, dl_dir):
     """
@@ -62,16 +79,62 @@ def yt_playlist_to_dict(yt_playlist):
     return video_dict
 
 
+def read_unavailable_ids(pl_path):
+    """
+    reads the ids of videos previously found to be permanently unavailable.
+    :param pl_path: the dir of the playlist
+    :return: set of video ids to skip
+    """
+    try:
+        with open(os.path.join(pl_path, UNAVAILABLE_LIST)) as f:
+            return {line.strip() for line in f if line.strip()}
+    except FileNotFoundError:
+        return set()
+
+
+def mark_unavailable(pl_path, vid_id):
+    """
+    records a video id as permanently unavailable so it is not retried.
+    :param pl_path: the dir of the playlist
+    :param vid_id: the id of the video to skip from now on
+    :return: None
+    """
+    with open(os.path.join(pl_path, UNAVAILABLE_LIST), 'a') as f:
+        f.write(f'{vid_id}\n')
+
+
+def is_permanent_error(error):
+    """
+    decides whether a download error means the video is gone for good.
+    :param error: the DownloadError that was raised
+    :return: True if the video should never be retried
+    """
+    message = str(error).lower()
+    return any(fragment in message for fragment in PERMANENT_ERRORS)
+
+
+def clean_leftovers(pl_path, vid_id):
+    """
+    removes the thumbnail/partial files a failed download leaves behind.
+    :param pl_path: the dir of the playlist
+    :param vid_id: the id of the video that failed
+    :return: None
+    """
+    for file in os.listdir(pl_path):
+        if file.split('=')[-2:-1] == [vid_id] and not file.endswith(f'.{PREFERRED_EXTENSION}'):
+            os.remove(os.path.join(pl_path, file))
+
+
 def download_video(pl_path, url):
     """
     using youtube-dl installs specified song/playlist at specified location.
     :param pl_path: dir where the song is downloaded to
     :param url: yt link or id to video to download
-    :return: None
+    :return: True if the download succeeded, False otherwise
     """
     try:
         ydl_opts = {
-            'format': f'{PREFERRED_EXTENSION}/bestaudio/best',
+            'format': f'bestaudio[ext={PREFERRED_EXTENSION}]/bestaudio/best',
             'outtmpl': f'{pl_path}/%(title)s=%(id)s=.%(ext)s',
             'writethumbnail': True,
             'embedthumbnail': True,
@@ -93,29 +156,35 @@ def download_video(pl_path, url):
             ydl.download([url])
 
         print("Download completed successfully.")
+        return True
     except yt_dlp.DownloadError as e:
         print(f"Error: {e}")
+        clean_leftovers(pl_path, url)
+        if is_permanent_error(e):
+            mark_unavailable(pl_path, url)
+            print(f"{url} is permanently unavailable, it will be skipped from now on.")
+        return False
 
 
 def phone_create_playlist_dict(pl_path):
     """
-    Creates a dict with song id:index pairing.
+    Creates a dict with song id:filename pairing.
     :param pl_path: the dir of the playlist
     :return: the dict of songs on device
     """
     songs_dict = {}
     files = os.listdir(pl_path)
-    for num, file in enumerate(files):
-        if file.split('=')[-1] == '.m4a':
+    for file in files:
+        if file.split('=')[-1] == f'.{PREFERRED_EXTENSION}':
             pl_id = file.split('=')[-2]
-            songs_dict[pl_id] = num
+            songs_dict[pl_id] = file
     return songs_dict
 
 
 def download_songs_in_dir(phone_playlist_dict, yt_playlist_dict):
     """
     downloads and/or updates the songs on the device if not up to date with the playlist on yt.
-    :param phone_playlist_dict: a dict containing the song on phone id:index in os.listdir pair
+    :param phone_playlist_dict: a dict containing the song on phone id:filename pair
     :param yt_playlist_dict: a dict containing yt song:song info pair
     :return: None
     """
@@ -126,21 +195,39 @@ def download_songs_in_dir(phone_playlist_dict, yt_playlist_dict):
         download_video(DL_DIRECTORY, PLAYLIST_LINK)
         return
 
+    unavailable_ids = read_unavailable_ids(DL_DIRECTORY)
     changes_made = 0
-    files = os.listdir(DL_DIRECTORY)
-    for vid_id, i in phone_playlist_dict.items():
+    failures = 0
+    skipped = 0
+
+    for vid_id, filename in phone_playlist_dict.items():
 
         if vid_id not in yt_playlist_dict:
-            os.remove(os.path.join(DL_DIRECTORY, files[i]))
+            os.remove(os.path.join(DL_DIRECTORY, filename))
             changes_made += 1
 
     for vid_id in yt_playlist_dict:
 
-        if vid_id not in phone_playlist_dict:
-            download_video(DL_DIRECTORY, vid_id)
-            changes_made += 1
+        if vid_id in phone_playlist_dict:
+            continue
 
-    if changes_made == 0:
+        if vid_id in unavailable_ids:
+            skipped += 1
+            continue
+
+        if download_video(DL_DIRECTORY, vid_id):
+            changes_made += 1
+        else:
+            failures += 1
+
+    if skipped:
+        print(f"Skipped {skipped} known unavailable video(s). "
+              f"Delete {UNAVAILABLE_LIST} to retry them.")
+
+    if failures:
+        print(f"{failures} download(s) failed and will be retried next run.")
+
+    if changes_made == 0 and failures == 0:
         print("Playlist is up to date!")
 
 
